@@ -77,7 +77,7 @@ pub(crate) fn log(args: LogArgs) -> Result<TokenStream> {
             for arg in formatting_exprs {
                 quote_args = quote! {
                     #quote_args
-                    match #arg.write(&mut buf.buf[record_len..]) {
+                    match { #arg }.write(&mut buf.buf[record_len..]) {
                         Ok(len) => record_len += len,
                         Err(_) => return,
                     };
