@@ -90,7 +90,7 @@ pub(crate) fn log(args: LogArgs) -> Result<TokenStream> {
     };
 
     Ok(quote! {
-        let f = || {
+        {
             if let Some(buf) = unsafe { ::aya_log_ebpf::AYA_LOG_BUF.get_mut(0) } {
                 if let Ok(header_len) = ::aya_log_ebpf::write_record_header(
                     &mut buf.buf,
@@ -118,8 +118,7 @@ pub(crate) fn log(args: LogArgs) -> Result<TokenStream> {
                     }
                 }
             }
-        };
-        f()
+        }
     })
 }
 
