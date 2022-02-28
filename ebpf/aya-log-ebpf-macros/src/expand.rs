@@ -71,18 +71,12 @@ pub(crate) fn log(args: LogArgs) -> Result<TokenStream> {
             let formatting_exprs = formatting_args.iter();
             let num_args = formatting_exprs.len();
 
-            let mut quote_args = quote! {
+            let quote_args = quote! {{
                 use ::aya_log_ebpf::WriteToBuf;
-            };
-            for arg in formatting_exprs {
-                quote_args = quote! {
-                    #quote_args
-                    match { #arg }.write(&mut buf.buf[record_len..]) {
-                        Ok(len) => record_len += len,
-                        Err(_) => return,
-                    };
-                }
-            }
+                Ok(record_len) #( .and_then(|record_len| {
+                    { #formatting_exprs }.write(&mut buf.buf[record_len..]).map(|len| record_len + len)
+                }) )*
+            }};
 
             (num_args, quote_args)
         }
@@ -105,15 +99,15 @@ pub(crate) fn log(args: LogArgs) -> Result<TokenStream> {
                         &mut buf.buf[header_len..],
                         #format_string
                     ) {
-                        let mut record_len = header_len + message_len;
+                        let record_len = header_len + message_len;
 
-                        #quote_args
-
-                        if record_len <= ::aya_log_common::LOG_BUF_CAPACITY {
-                            let _ = unsafe { ::aya_log_ebpf::AYA_LOGS.output(
-                                #ctx,
-                                &buf.buf[..record_len], 0
-                            )};
+                        if let Ok(record_len) = #quote_args {
+                            if record_len <= ::aya_log_common::LOG_BUF_CAPACITY {
+                                let _ = unsafe { ::aya_log_ebpf::AYA_LOGS.output(
+                                    #ctx,
+                                    &buf.buf[..record_len], 0
+                                )};
+                            }
                         }
                     }
                 }
