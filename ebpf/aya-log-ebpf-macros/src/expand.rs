@@ -73,7 +73,7 @@ pub(crate) fn log(args: LogArgs) -> Result<TokenStream> {
 
             let quote_args = quote! {{
                 use ::aya_log_ebpf::WriteToBuf;
-                Ok(record_len) #( .and_then(|record_len| {
+                Ok::<_, ()>(record_len) #( .and_then(|record_len| {
                     { #formatting_exprs }.write(&mut buf.buf[record_len..]).map(|len| record_len + len)
                 }) )*
             }};
